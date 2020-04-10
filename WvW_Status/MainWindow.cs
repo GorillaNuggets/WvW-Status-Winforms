@@ -77,10 +77,8 @@ namespace WvW_Status
                     continue;
                 }
                 formControl.Dispose();
-            }
-
-            var displayTeams = Teams.Where(team => team.Region == "NA");
-            DisplayInfo(displayTeams);
+            }            
+            DisplayInfo("NA");
         }
         private void radioButtonEU_CheckedChanged(object sender, System.EventArgs e)
         {
@@ -91,13 +89,23 @@ namespace WvW_Status
                     continue;
                 }
                 formControl.Dispose();
+            }                        
+            DisplayInfo("EU");
+        }
+        private void DisplayInfo(string selectedRegion)
+        {
+
+            var displayTeams = new List<Team>();
+            
+            if (selectedRegion == "NA")
+            {
+                displayTeams = Teams.Where(team => team.Region == "NA").ToList();
+            }
+            else
+            {
+                displayTeams = Teams.Where(team => team.Region == "EU").ToList();
             }
 
-            var displayTeams = Teams.Where(team => team.Region == "EU");
-            DisplayInfo(displayTeams);
-        }
-        private void DisplayInfo(IEnumerable<Team> displayTeams)
-        {   
             var sortedList = new List<Team>();
             sortedList = displayTeams.OrderBy(a => a.Tier).ThenByDescending(a => a.VP).ThenBy(a => a.Score).ToList();                       
             
@@ -251,7 +259,7 @@ namespace WvW_Status
                 }
                 this.Controls.Add(matchPanel);
                 py += 125;
-            }
+            }            
         }
     }
 }
