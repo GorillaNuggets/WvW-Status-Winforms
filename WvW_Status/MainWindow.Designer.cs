@@ -30,6 +30,7 @@
         {
             this.radioButtonNA = new System.Windows.Forms.RadioButton();
             this.radioButtonEU = new System.Windows.Forms.RadioButton();
+            this.resultsPanel = new System.Windows.Forms.FlowLayoutPanel();
             this.SuspendLayout();
             // 
             // radioButtonNA
@@ -58,12 +59,25 @@
             this.radioButtonEU.UseVisualStyleBackColor = true;
             this.radioButtonEU.CheckedChanged += new System.EventHandler(this.radioButtonEU_CheckedChanged);
             // 
+            // resultsPanel
+            // 
+            this.resultsPanel.AutoSize = true;
+            this.resultsPanel.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.resultsPanel.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
+            this.resultsPanel.Location = new System.Drawing.Point(0, 48);
+            this.resultsPanel.Margin = new System.Windows.Forms.Padding(0);
+            this.resultsPanel.Name = "resultsPanel";
+            this.resultsPanel.Padding = new System.Windows.Forms.Padding(10, 0, 10, 15);
+            this.resultsPanel.Size = new System.Drawing.Size(20, 15);
+            this.resultsPanel.TabIndex = 3;
+            // 
             // MainWindow
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.Black;
             this.ClientSize = new System.Drawing.Size(242, 58);
+            this.Controls.Add(this.resultsPanel);
             this.Controls.Add(this.radioButtonEU);
             this.Controls.Add(this.radioButtonNA);
             this.Font = new System.Drawing.Font("Cambria", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
@@ -81,6 +95,7 @@
 
         private System.Windows.Forms.RadioButton radioButtonNA;
         private System.Windows.Forms.RadioButton radioButtonEU;
+        private System.Windows.Forms.FlowLayoutPanel resultsPanel;
     }
 }
 
