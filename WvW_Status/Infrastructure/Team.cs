@@ -21,5 +21,6 @@ namespace WvW_Status
         public string VP_Tip { get; set; }      // Victory Point Tooltip
         public string Link_Tip { get; set; }    // Linked Server Tooltip
         public string Placeholder { get; set; } // Placeholder for Next Matchup
+        public Color TextColor { get; set; }    // Self-explanatory
     }
 }

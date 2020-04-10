@@ -64,26 +64,45 @@ namespace WvW_Status
                 Score = Util.GetPropertyValue<int>(match.Skirmishes.LastOrDefault().Scores, teamColor),
                 VP_Tip = "Highest\t " + hvp.ToString() + "\r\n" + "Lowest\t " + lvp.ToString(),
                 Link_Tip = GenerateMatchInfoTip(Util.GetPropertyValue<IEnumerable<int>>(match.All_Worlds, teamColor)),
-                Placeholder = Worlds[Util.GetPropertyValue<int>(match.Worlds, teamColor)].Name
+                Placeholder = Worlds[Util.GetPropertyValue<int>(match.Worlds, teamColor)].Name,
+                TextColor = Color.Gainsboro
             });
         }
         private void radioButtonNA_CheckedChanged(object sender, System.EventArgs e)
-        {            
+        {
+            foreach (Control formControl in this.Controls)
+            {
+                if (formControl.Name == "radioButtonNA" || formControl.Name == "radioButtonEU")
+                {
+                    continue;
+                }
+                formControl.Dispose();
+            }
+
             var displayTeams = Teams.Where(team => team.Region == "NA");
             DisplayInfo(displayTeams);
         }
         private void radioButtonEU_CheckedChanged(object sender, System.EventArgs e)
-        {            
+        {
+            foreach (Control formControl in this.Controls)
+            {
+                if (formControl.Name == "radioButtonNA" || formControl.Name == "radioButtonEU")
+                {
+                    continue;
+                }
+                formControl.Dispose();
+            }
+
             var displayTeams = Teams.Where(team => team.Region == "EU");
             DisplayInfo(displayTeams);
         }
         private void DisplayInfo(IEnumerable<Team> displayTeams)
-        {
+        {   
             var sortedList = new List<Team>();
             sortedList = displayTeams.OrderBy(a => a.Tier).ThenByDescending(a => a.VP).ThenBy(a => a.Score).ToList();                       
             
             var tiers = sortedList.Max(t => t.Tier);
-            this.Height = 105 + (tiers * 125);
+            this.Size = new Size(700, 105 + (tiers * 125));            
 
             int pos = 0;
             int py = 61;
@@ -141,6 +160,14 @@ namespace WvW_Status
                 
                 for (int team = 1; team <= 3; team++)
                 {
+                    if (team != 3)
+                    {
+                        if (sortedList[pos].VP == sortedList[pos + 1].VP)
+                        {
+                            sortedList[pos].TextColor = Color.Salmon;
+                            sortedList[pos + 1].TextColor = Color.Salmon;
+                        }
+                    }
                     if (team == 3 && p < tiers) 
                     {
                         var swap = true;
@@ -149,11 +176,12 @@ namespace WvW_Status
                         {
                             swap = false;
                         }
+                        
                         if (sortedList[pos + 1].VP == sortedList[pos + 2].VP)
                         {
                             swap = false;        
                         }
-
+                        
                         if (swap == true)
                         {
                             var temp = sortedList[pos].Placeholder;
@@ -195,7 +223,7 @@ namespace WvW_Status
                                 Location = new Point(258, 0),
                                 Size = new Size(98, 23),
                                 TextAlign = ContentAlignment.MiddleCenter,
-                                ForeColor = Color.Gainsboro,
+                                ForeColor = sortedList[pos].TextColor,
                                 Text = sortedList[pos].VP.ToString()
                             },
                             new Label // ---------------------------------- War Score
