@@ -27,7 +27,10 @@ namespace WvW_Status
 
             foreach (var world in worldResult)
             {
-                Worlds.Add(world.Id, new World() { Id = world.Id, Name = world.Name, Population = world.Population });
+                Worlds.Add(world.Id, new World()
+                {
+                    Id = world.Id, Name = world.Name, Population = world.Population
+                });
             }
 
             foreach (var match in matchesResult)
@@ -35,9 +38,10 @@ namespace WvW_Status
                 CreateTeamInfo(match, "Green", Color.DarkGreen);
                 CreateTeamInfo(match, "Blue", Color.DarkBlue);
                 CreateTeamInfo(match, "Red", Color.DarkRed);
-            }            
+            }
         }
-        private void CreateTeamInfo(Match match, string teamColor, Color displayColor)
+
+        private static void CreateTeamInfo(Match match, string teamColor, Color displayColor)
         {
             string GenerateMatchInfoTip(IEnumerable<int> list)
             {
@@ -61,205 +65,246 @@ namespace WvW_Status
                 VP = vp,
                 HVP = hvp,
                 LVP = lvp,
-                Score = Util.GetPropertyValue<int>(match.Skirmishes.LastOrDefault().Scores, teamColor),
+                Score = Util.GetPropertyValue<int>(match.Skirmishes.LastOrDefault()?.Scores, teamColor),
                 VP_Tip = "Highest\t " + hvp.ToString() + "\r\n" + "Lowest\t " + lvp.ToString(),
                 Link_Tip = GenerateMatchInfoTip(Util.GetPropertyValue<IEnumerable<int>>(match.All_Worlds, teamColor)),
                 Placeholder = Worlds[Util.GetPropertyValue<int>(match.Worlds, teamColor)].Name,
                 TextColor = Color.Gainsboro
             });
         }
+
         private void radioButtonNA_CheckedChanged(object sender, System.EventArgs e)
         {
-            foreach (Control formControl in this.Controls)
+            if (!radioButtonNA.Checked)
             {
-                if (formControl.Name == "radioButtonNA" || formControl.Name == "radioButtonEU")
-                {
-                    continue;
-                }
-                formControl.Dispose();
-            }            
+                return;
+            }
+
+            for (var i = resultsPanel.Controls.Count - 1; i >= 0; i--)
+            {
+                resultsPanel.Controls[i].Dispose();
+            }
+
             DisplayInfo("NA");
         }
+
         private void radioButtonEU_CheckedChanged(object sender, System.EventArgs e)
         {
-            foreach (Control formControl in this.Controls)
+            if (!radioButtonEU.Checked)
             {
-                if (formControl.Name == "radioButtonNA" || formControl.Name == "radioButtonEU")
-                {
-                    continue;
-                }
-                formControl.Dispose();
-            }                        
+                return;
+            }
+
+            for (var i = resultsPanel.Controls.Count - 1; i >= 0; i--)
+            {
+                resultsPanel.Controls[i].Dispose();
+            }
+
             DisplayInfo("EU");
         }
+
         private void DisplayInfo(string selectedRegion)
         {
+            var displayTeams = Teams.Where(team => team.Region == selectedRegion).ToList();
+            var sortedList =
+                displayTeams
+                    .OrderBy(a => a.Tier)
+                    .ThenByDescending(a => a.VP)
+                    .ThenBy(a => a.Score)
+                    .ToList();
 
-            var displayTeams = new List<Team>();
-            
-            if (selectedRegion == "NA")
-            {
-                displayTeams = Teams.Where(team => team.Region == "NA").ToList();
-            }
-            else
-            {
-                displayTeams = Teams.Where(team => team.Region == "EU").ToList();
-            }
+            var numTiers = sortedList.Max(t => t.Tier);
 
-            var sortedList = new List<Team>();
-            sortedList = displayTeams.OrderBy(a => a.Tier).ThenByDescending(a => a.VP).ThenBy(a => a.Score).ToList();                       
-            
-            var tiers = sortedList.Max(t => t.Tier);
-            this.Size = new Size(700, 105 + (tiers * 125));            
-
-            int pos = 0;
-            int py = 61;
-            for (int p = 1; p <= tiers; p++)
+            for (var tier = 1; tier <= numTiers; tier++)
             {
-                var matchPanel = new Panel
+                const int spacing = 5;
+                const int rowHeight = 23;
+                const int serverColumnWidth = 160;
+                const int lockColumnWidth = 23;
+                const int rankColumnWidth = 50;
+                const int vpColumnWidth = 100;
+                const int scoreColumnWidth = 100;
+                const int nextMatchColumnWidth = 160;
+
+                var spacingObj = new Padding(0, 0, spacing, spacing);
+
+                var tierTable = new TableLayoutPanel()
                 {
-                    Location = new Point(5, py),
-                    Size = new Size(670, 120),
-                    Font = new Font("Cambria", 11, FontStyle.Regular),                    
+                    Padding = new Padding(0, 10, 0, 0),
+                    ColumnCount = 6,
+                    RowCount = 4,
+                    AutoSize = true,
+                    AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                    Font = new Font("Cambria", 11, FontStyle.Regular),
                     ForeColor = Color.FromArgb(255, 128, 128, 128),
-                    BackColor = Color.Black,
-                    Controls =
-                    {
-                        new Label
-                        {
-                            Location = new Point(8, 3),
-                            AutoSize = true,                            
-                            TextAlign = ContentAlignment.TopCenter,
-                            Text = $"Current Tier {p} Matchup"
-                        },
-                        new Label
-                        {
-                            Location = new Point(198, 3),
-                            AutoSize = true,
-                            TextAlign = ContentAlignment.TopCenter,
-                            Text = "Rank"
-                        },
-                        new Label
-                        {
-                            Location = new Point(263, 3),
-                            AutoSize = true,
-                            TextAlign = ContentAlignment.TopCenter,
-                            Text = "Victory Points"
-                        },
-                        new Label
-                        {
-                            Location = new Point(386, 3),
-                            AutoSize = true,
-                            TextAlign = ContentAlignment.TopCenter,
-                            Text = "War Score"
-                        },
-                        new Label
-                        {
-                            Location = new Point(518, 3),
-                            AutoSize = true,
-                            TextAlign = ContentAlignment.TopCenter,
-                            Text = $"Next Tier {p} Matchup"
-                        }
-                    }
+                    BackColor = Color.Black
                 };
 
-                int ty = 28;
-                var teamName = sortedList[pos].Name;
-                
-                for (int team = 1; team <= 3; team++)
-                {
-                    if (team != 3)
-                    {
-                        if (sortedList[pos].VP == sortedList[pos + 1].VP)
-                        {
-                            sortedList[pos].TextColor = Color.Salmon;
-                            sortedList[pos + 1].TextColor = Color.Salmon;
-                        }
-                    }
-                    if (team == 3 && p < tiers) 
-                    {
-                        var swap = true;
+                tierTable.ColumnStyles.Clear();
+                tierTable.RowStyles.Clear();
+                tierTable.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, serverColumnWidth + spacing));
+                tierTable.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, lockColumnWidth + spacing));
+                tierTable.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, rankColumnWidth + spacing));
+                tierTable.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, vpColumnWidth + spacing));
+                tierTable.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, scoreColumnWidth + spacing));
+                tierTable.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, nextMatchColumnWidth));
+                tierTable.RowStyles.Add(new RowStyle(SizeType.Absolute, rowHeight + spacing));
+                tierTable.RowStyles.Add(new RowStyle(SizeType.Absolute, rowHeight + spacing));
+                tierTable.RowStyles.Add(new RowStyle(SizeType.Absolute, rowHeight + spacing));
+                tierTable.RowStyles.Add(new RowStyle(SizeType.Absolute, rowHeight + spacing));
 
-                        if (sortedList[pos - 1].VP == sortedList[pos].VP)
+                #region Column Headers
+
+                var headerControls = new List<Control>
+                {
+                    new Label
+                    {
+                        Dock = DockStyle.Fill,
+                        Margin = spacingObj,
+                        TextAlign = ContentAlignment.TopCenter,
+                        Text = $@"Current Tier {tier} Matchup"
+                    },
+                    new Label // lock spacer
+                    {
+                        Margin = spacingObj,
+                    },
+                    new Label
+                    {
+                        Dock = DockStyle.Fill,
+                        Margin = spacingObj,
+                        TextAlign = ContentAlignment.TopCenter,
+                        Text = @"Rank"
+                    },
+                    new Label
+                    {
+                        Dock = DockStyle.Fill,
+                        Margin = spacingObj,
+                        TextAlign = ContentAlignment.TopCenter,
+                        Text = @"Victory Points"
+                    },
+                    new Label
+                    {
+                        Dock = DockStyle.Fill,
+                        Margin = spacingObj,
+                        TextAlign = ContentAlignment.TopCenter,
+                        Text = @"War Score"
+                    },
+                    new Label
+                    {
+                        Dock = DockStyle.Fill,
+                        Margin = spacingObj,
+                        TextAlign = ContentAlignment.TopCenter,
+                        Text = $@"Next Tier {tier} Matchup"
+                    }
+                };
+                for (var i = 0; i < headerControls.Count; i++)
+                {
+                    tierTable.Controls.Add(headerControls[i], i, 0);
+                }
+
+                #endregion
+
+
+                #region Team rows
+
+                const int numTeams = 3;
+
+                for (var team = 1; team <= numTeams; team++)
+                {
+                    var idx = (tier - 1) * numTeams + (team - 1);
+
+                    if (team < numTeams && sortedList[idx].VP == sortedList[idx + 1].VP)
+                    {
+                        sortedList[idx].TextColor = Color.Salmon;
+                        sortedList[idx + 1].TextColor = Color.Salmon;
+                    }
+
+                    if (team == numTeams && tier < numTiers)
+                    {
+                        var swap = sortedList[idx - 1].VP != sortedList[idx].VP;
+
+                        if (sortedList[idx + 1].VP == sortedList[idx + 2].VP)
                         {
                             swap = false;
                         }
-                        
-                        if (sortedList[pos + 1].VP == sortedList[pos + 2].VP)
+
+                        if (swap)
                         {
-                            swap = false;        
+                            var temp = sortedList[idx].Placeholder;
+                            sortedList[idx].Placeholder = sortedList[idx + 1].Placeholder;
+                            sortedList[idx + 1].Placeholder = temp;
                         }
-                        
-                        if (swap == true)
-                        {
-                            var temp = sortedList[pos].Placeholder;
-                            sortedList[pos].Placeholder = sortedList[pos + 1].Placeholder;
-                            sortedList[pos + 1].Placeholder = temp;
-                        }                        
                     }
-                    var teamPanel = new Panel
+
+                    var teamControls = new List<Control>
                     {
-                        Location = new Point(5, ty),
-                        Size = new Size(670, 23),
-                        Controls =
+                        new Label // ---------------------------------- Current Team Name
                         {
-                            new Label // ---------------------------------- Current Team Name
-                            {
-                                Location = new Point(0, 0),
-                                Size = new Size(160, 23),
-                                TextAlign = ContentAlignment.MiddleCenter,
-                                ForeColor = Color.Gainsboro,
-                                BackColor = sortedList[pos].Color,
-                                Text = sortedList[pos].Name
-                            },
-                            new PictureBox // ----------------------------- Lock Image
-                            {
-                                Location = new Point(165, 0),
-                                Size = new Size(23, 23),
-                                BackColor = Color.FromArgb(255, 28, 28, 28),
-                            },
-                            new Label // ---------------------------------- Rank
-                            {
-                                Location = new Point(193, 0),
-                                Size = new Size(40, 23),
-                                TextAlign = ContentAlignment.MiddleCenter,
-                                ForeColor = Color.Gainsboro,
-                                Text = team == 1 ? "1st" : team == 2 ? "2nd" : team == 3 ? "3rd" : ""
-                            },
-                            new Label // ---------------------------------- Victory Points
-                            {
-                                Location = new Point(258, 0),
-                                Size = new Size(98, 23),
-                                TextAlign = ContentAlignment.MiddleCenter,
-                                ForeColor = sortedList[pos].TextColor,
-                                Text = sortedList[pos].VP.ToString()
-                            },
-                            new Label // ---------------------------------- War Score
-                            {
-                                Location = new Point(381, 0),
-                                Size = new Size(72, 23),
-                                TextAlign = ContentAlignment.MiddleCenter,
-                                ForeColor = Color.Gainsboro,
-                                Text = sortedList[pos].Score.ToString()
-                            },
-                            new Label // ---------------------------------- Next Team Name
-                            {
-                                Location = new Point(500, 0),
-                                Size = new Size(160, 23),
-                                TextAlign = ContentAlignment.MiddleCenter,
-                                ForeColor = Color.Gainsboro,
-                                BackColor = team == 1 ? Color.DarkGreen : team == 2 ? Color.DarkBlue : team == 3 ? Color.DarkRed : Color.Black,
-                                Text = sortedList[pos].Placeholder
-                            }
+                            Dock = DockStyle.Fill,
+                            Margin = spacingObj,
+                            TextAlign = ContentAlignment.MiddleCenter,
+                            ForeColor = Color.Gainsboro,
+                            BackColor = sortedList[idx].Color,
+                            Text = sortedList[idx].Name
+                        },
+                        new PictureBox // ----------------------------- Lock Image
+                        {
+                            Dock = DockStyle.Fill,
+                            Margin = spacingObj,
+                            BackColor = Color.FromArgb(255, 28, 28, 28),
+                        },
+                        new Label // ---------------------------------- Rank
+                        {
+                            Dock = DockStyle.Fill,
+                            Margin = spacingObj,
+                            TextAlign = ContentAlignment.MiddleCenter,
+                            ForeColor = Color.Gainsboro,
+                            Text = team == 1 ? "1st" : team == 2 ? "2nd" : team == 3 ? "3rd" : ""
+                        },
+                        new Label // ---------------------------------- Victory Points
+                        {
+                            Dock = DockStyle.Fill,
+                            Margin = spacingObj,
+                            TextAlign = ContentAlignment.MiddleCenter,
+                            ForeColor = sortedList[idx].TextColor,
+                            Text = sortedList[idx].VP.ToString()
+                        },
+                        new Label // ---------------------------------- War Score
+                        {
+                            Dock = DockStyle.Fill,
+                            Margin = spacingObj,
+                            TextAlign = ContentAlignment.MiddleCenter,
+                            ForeColor = Color.Gainsboro,
+                            Text = sortedList[idx].Score.ToString()
+                        },
+                        new Label // ---------------------------------- Next Team Name
+                        {
+                            Dock = DockStyle.Fill,
+                            Margin = new Padding(0, 0, 0, spacing),
+                            TextAlign = ContentAlignment.MiddleCenter,
+                            ForeColor = Color.Gainsboro,
+                            BackColor = team == 1 ? Color.DarkGreen :
+                                team == 2 ? Color.DarkBlue :
+                                team == 3 ? Color.DarkRed : Color.Black,
+                            Text = sortedList[idx].Placeholder
                         }
                     };
-                    matchPanel.Controls.Add(teamPanel);
-                    ty += 29;
-                    pos++;
+
+                    for (var i = 0; i < teamControls.Count; i++)
+                    {
+                        tierTable.Controls.Add(teamControls[i], i, team);
+                    }
                 }
-                this.Controls.Add(matchPanel);
-                py += 125;
-            }            
+
+                #endregion
+
+                resultsPanel.Controls.Add(tierTable);
+            }
+
+            Size = new Size(
+                resultsPanel.Width + resultsPanel.Padding.Horizontal,
+                resultsPanel.Top + resultsPanel.Height + resultsPanel.Padding.Vertical + 20
+            );
         }
     }
 }
