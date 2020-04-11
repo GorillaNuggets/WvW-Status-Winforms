@@ -75,11 +75,14 @@ namespace WvW_Status
 
         private void radioButtonNA_CheckedChanged(object sender, System.EventArgs e)
         {
+            // This event is fired both when the radio is checked and when it is unchecked.
+            // We only care about when it's been checked.
             if (!radioButtonNA.Checked)
             {
                 return;
             }
 
+            // start at the end and loop backwards to prevent issues with indexes resetting when disposing
             for (var i = resultsPanel.Controls.Count - 1; i >= 0; i--)
             {
                 resultsPanel.Controls[i].Dispose();
@@ -90,11 +93,14 @@ namespace WvW_Status
 
         private void radioButtonEU_CheckedChanged(object sender, System.EventArgs e)
         {
+            // This event is fired both when the radio is checked and when it is unchecked.
+            // We only care about when it's been checked.
             if (!radioButtonEU.Checked)
             {
                 return;
             }
 
+            // start at the end and loop backwards to prevent issues with indexes resetting when disposing
             for (var i = resultsPanel.Controls.Count - 1; i >= 0; i--)
             {
                 resultsPanel.Controls[i].Dispose();
@@ -106,17 +112,19 @@ namespace WvW_Status
         private void DisplayInfo(string selectedRegion)
         {
             var displayTeams = Teams.Where(team => team.Region == selectedRegion).ToList();
-            var sortedList =
+            var sortedTeams =
                 displayTeams
                     .OrderBy(a => a.Tier)
                     .ThenByDescending(a => a.VP)
                     .ThenBy(a => a.Score)
                     .ToList();
 
-            var numTiers = sortedList.Max(t => t.Tier);
+            var numTiers = sortedTeams.Max(t => t.Tier);
 
             for (var tier = 1; tier <= numTiers; tier++)
             {
+                #region Configurable values to alter the appearance of the table
+
                 const int spacing = 5;
                 const int rowHeight = 23;
                 const int serverColumnWidth = 160;
@@ -126,13 +134,13 @@ namespace WvW_Status
                 const int scoreColumnWidth = 100;
                 const int nextMatchColumnWidth = 160;
 
+                #endregion
+
                 var spacingObj = new Padding(0, 0, spacing, spacing);
 
                 var tierTable = new TableLayoutPanel()
                 {
-                    Padding = new Padding(0, 10, 0, 0),
-                    ColumnCount = 6,
-                    RowCount = 4,
+                    Padding = new Padding(0, 10, 0, 0), // add some spacing between each tier
                     AutoSize = true,
                     AutoSizeMode = AutoSizeMode.GrowAndShrink,
                     Font = new Font("Cambria", 11, FontStyle.Regular),
@@ -140,14 +148,12 @@ namespace WvW_Status
                     BackColor = Color.Black
                 };
 
-                tierTable.ColumnStyles.Clear();
-                tierTable.RowStyles.Clear();
                 tierTable.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, serverColumnWidth + spacing));
                 tierTable.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, lockColumnWidth + spacing));
                 tierTable.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, rankColumnWidth + spacing));
                 tierTable.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, vpColumnWidth + spacing));
                 tierTable.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, scoreColumnWidth + spacing));
-                tierTable.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, nextMatchColumnWidth));
+                tierTable.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, nextMatchColumnWidth + spacing));
                 tierTable.RowStyles.Add(new RowStyle(SizeType.Absolute, rowHeight + spacing));
                 tierTable.RowStyles.Add(new RowStyle(SizeType.Absolute, rowHeight + spacing));
                 tierTable.RowStyles.Add(new RowStyle(SizeType.Absolute, rowHeight + spacing));
@@ -157,39 +163,39 @@ namespace WvW_Status
 
                 var headerControls = new List<Control>
                 {
-                    new Label
+                    new Label // ---------------------------------- Current Team Name
                     {
                         Dock = DockStyle.Fill,
                         Margin = spacingObj,
                         TextAlign = ContentAlignment.TopCenter,
                         Text = $@"Current Tier {tier} Matchup"
                     },
-                    new Label // lock spacer
+                    new Label // ----------------------------- Lock Image (no heading, just here as a spacer)
                     {
                         Margin = spacingObj,
                     },
-                    new Label
+                    new Label // ---------------------------------- Rank
                     {
                         Dock = DockStyle.Fill,
                         Margin = spacingObj,
                         TextAlign = ContentAlignment.TopCenter,
                         Text = @"Rank"
                     },
-                    new Label
+                    new Label // ---------------------------------- Victory Points
                     {
                         Dock = DockStyle.Fill,
                         Margin = spacingObj,
                         TextAlign = ContentAlignment.TopCenter,
                         Text = @"Victory Points"
                     },
-                    new Label
+                    new Label // ---------------------------------- War Score
                     {
                         Dock = DockStyle.Fill,
                         Margin = spacingObj,
                         TextAlign = ContentAlignment.TopCenter,
                         Text = @"War Score"
                     },
-                    new Label
+                    new Label // ---------------------------------- Next Team Name
                     {
                         Dock = DockStyle.Fill,
                         Margin = spacingObj,
@@ -209,31 +215,38 @@ namespace WvW_Status
 
                 const int numTeams = 3;
 
-                for (var team = 1; team <= numTeams; team++)
+                for (var teamNum = 1; teamNum <= numTeams; teamNum++)
                 {
-                    var idx = (tier - 1) * numTeams + (team - 1);
+                    // calculate index of this team in the sortedList of all teams
+                    var idx = (tier - 1) * numTeams + (teamNum - 1);
 
-                    if (team < numTeams && sortedList[idx].VP == sortedList[idx + 1].VP)
+                    var team = sortedTeams[idx];
+                    var nextTeam = idx + 1 < sortedTeams.Count ? sortedTeams[idx + 1] : null;
+                    var nextTeam2 = idx + 2 < sortedTeams.Count ? sortedTeams[idx + 2] : null;
+                    var isLosingTeam = teamNum == numTeams;
+                    var isLastTier = tier == numTiers;
+
+                    // If VP is tied with the next team, change the VP text color
+                    if (nextTeam != null && team.VP == nextTeam.VP)
                     {
-                        sortedList[idx].TextColor = Color.Salmon;
-                        sortedList[idx + 1].TextColor = Color.Salmon;
+                        team.TextColor = Color.Salmon;
+                        nextTeam.TextColor = Color.Salmon;
                     }
 
-                    if (team == numTeams && tier < numTiers)
+                    // Figure out who the teams are going to be in the next matchup.
+                    if (
+                        // Swap this tier's losing team with the next tier's winning team
+                        isLosingTeam &&
+                        // unless it's the last tier
+                        !isLastTier &&
+                        // unless there is no next team (shouldn't happen)
+                        nextTeam != null &&
+                        // unless there's a tie between the next tier's first and second place teams
+                        (nextTeam2 == null || nextTeam.VP != nextTeam2.VP)
+                    )
                     {
-                        var swap = sortedList[idx - 1].VP != sortedList[idx].VP;
-
-                        if (sortedList[idx + 1].VP == sortedList[idx + 2].VP)
-                        {
-                            swap = false;
-                        }
-
-                        if (swap)
-                        {
-                            var temp = sortedList[idx].Placeholder;
-                            sortedList[idx].Placeholder = sortedList[idx + 1].Placeholder;
-                            sortedList[idx + 1].Placeholder = temp;
-                        }
+                        nextTeam.Placeholder = team.Name;
+                        team.Placeholder = nextTeam.Name;
                     }
 
                     var teamControls = new List<Control>
@@ -244,8 +257,8 @@ namespace WvW_Status
                             Margin = spacingObj,
                             TextAlign = ContentAlignment.MiddleCenter,
                             ForeColor = Color.Gainsboro,
-                            BackColor = sortedList[idx].Color,
-                            Text = sortedList[idx].Name
+                            BackColor = team.Color,
+                            Text = team.Name
                         },
                         new PictureBox // ----------------------------- Lock Image
                         {
@@ -259,15 +272,17 @@ namespace WvW_Status
                             Margin = spacingObj,
                             TextAlign = ContentAlignment.MiddleCenter,
                             ForeColor = Color.Gainsboro,
-                            Text = team == 1 ? "1st" : team == 2 ? "2nd" : team == 3 ? "3rd" : ""
+                            Text = teamNum == 1 ? "1st" :
+                                teamNum == 2 ? "2nd" :
+                                teamNum == 3 ? "3rd" : ""
                         },
                         new Label // ---------------------------------- Victory Points
                         {
                             Dock = DockStyle.Fill,
                             Margin = spacingObj,
                             TextAlign = ContentAlignment.MiddleCenter,
-                            ForeColor = sortedList[idx].TextColor,
-                            Text = sortedList[idx].VP.ToString()
+                            ForeColor = team.TextColor,
+                            Text = team.VP.ToString()
                         },
                         new Label // ---------------------------------- War Score
                         {
@@ -275,7 +290,7 @@ namespace WvW_Status
                             Margin = spacingObj,
                             TextAlign = ContentAlignment.MiddleCenter,
                             ForeColor = Color.Gainsboro,
-                            Text = sortedList[idx].Score.ToString()
+                            Text = team.Score.ToString()
                         },
                         new Label // ---------------------------------- Next Team Name
                         {
@@ -283,16 +298,15 @@ namespace WvW_Status
                             Margin = new Padding(0, 0, 0, spacing),
                             TextAlign = ContentAlignment.MiddleCenter,
                             ForeColor = Color.Gainsboro,
-                            BackColor = team == 1 ? Color.DarkGreen :
-                                team == 2 ? Color.DarkBlue :
-                                team == 3 ? Color.DarkRed : Color.Black,
-                            Text = sortedList[idx].Placeholder
+                            BackColor = teamNum == 1 ? Color.DarkGreen :
+                                teamNum == 2 ? Color.DarkBlue :
+                                teamNum == 3 ? Color.DarkRed : Color.Black,
+                            Text = team.Placeholder
                         }
                     };
-
                     for (var i = 0; i < teamControls.Count; i++)
                     {
-                        tierTable.Controls.Add(teamControls[i], i, team);
+                        tierTable.Controls.Add(teamControls[i], i, teamNum);
                     }
                 }
 
@@ -301,6 +315,7 @@ namespace WvW_Status
                 resultsPanel.Controls.Add(tierTable);
             }
 
+            // dynamically resize the window:
             Size = new Size(
                 resultsPanel.Width + resultsPanel.Padding.Horizontal,
                 resultsPanel.Top + resultsPanel.Height + resultsPanel.Padding.Vertical + 20
